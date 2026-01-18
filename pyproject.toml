@@ -6,9 +6,9 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "LangChain AI", email = "support@langchain.dev"}
+    {name = "Phantom-man", email = "damienfosborn@gmail.com"}
 ]
-keywords = ["mcp", "copilot", "github", "memory", "ai", "langchain"]
+keywords = ["mcp", "copilot", "github", "memory", "ai", "session"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

@@ -31,7 +31,7 @@ all = ["openai>=1.0.0"]
 [project.urls]
 Homepage = "https://github.com/phantom-man"
 Repository = "https://github.com/phantom-man/canon_keeper_mcp"
-Documentation = "https://github.com/phantom-man/main/canon_keeper_mcp/README.md"
+Documentation = "https://github.com/phantom-man/canon_keeper_mcp/blob/main/README.md"
 
 [project.scripts]
 canon-keeper-mcp = "canon_keeper_mcp.server:main"

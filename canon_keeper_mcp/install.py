@@ -41,20 +41,23 @@ MEMORY_PROTOCOL_DIRECTIVE = '''
 ### Memory Persistence Protocol (@History) - CRITICAL
 **Rule:** When the user includes `@History`, `save this`, `remember this`, or `add to memory` in any message:
 
-1. **Gather Context:**
-   - Read the current `copilot-instructions.md` file content
-   - Collect the full conversation history from this session (all messages exchanged)
+1. **Extract Learnings:**
+   - Analyze the conversation for technical decisions, architectural choices, workarounds, and insights
+   - Format each as: `{ topic: "Short Name", decision: "What was decided", rationale: "Why" }`
 
-2. **Call MCP Tool:**
+2. **Gather Context:**
+   - Read the current `copilot-instructions.md` file content
+
+3. **Call MCP Tool:**
    - Invoke `canon_keeper.extract_and_save_learnings` with:
-     - `conversation`: The complete conversation text (format each turn as "User: ... \\n Assistant: ...")
+     - `learnings`: Array of learning objects you extracted
      - `current_instructions`: The full content of `.github/copilot-instructions.md`
 
-3. **Process Response:**
+4. **Process Response:**
    - The tool returns: `{ new_learnings: [...], duplicates_skipped: [...], markdown_to_append: "..." }`
    - If `markdown_to_append` is non-empty, append it to the Session Learnings Log table
 
-4. **Report to User:**
+5. **Report to User:**
    - Confirm what was saved: "✅ Saved X new learning(s)"
    - Report what was skipped: "⏭️ Skipped Y duplicate(s): [topic names]"
    - If nothing new: "No new learnings detected in this conversation."
@@ -64,11 +67,12 @@ MEMORY_PROTOCOL_DIRECTIVE = '''
 **Example:**
 ```
 User: @History save what we learned
-Copilot: [reads copilot-instructions.md]
-         [calls canon_keeper.extract_and_save_learnings]
+Copilot: [extracts learnings from conversation]
+         [reads copilot-instructions.md]
+         [calls canon_keeper.extract_and_save_learnings with learnings array]
          ✅ Saved 2 new learning(s):
            - MCP Memory Architecture: MCP server for learning extraction
-           - Deduplication Pattern: LLM-based semantic comparison
+           - Deduplication Pattern: Jaccard similarity comparison
          ⏭️ Skipped 1 duplicate: FFmpeg Stream Copy (already in log)
 ```
 '''
@@ -137,7 +141,7 @@ def install_dependencies():
     """Install required Python packages."""
     print("📦 Installing dependencies...")
     
-    packages = ["mcp>=1.0.0", "google-genai>=1.0.0"]
+    packages = ["mcp>=1.0.0"]
     
     try:
         subprocess.run(

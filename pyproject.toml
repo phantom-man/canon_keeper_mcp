@@ -1,7 +1,7 @@
 [project]
 name = "canon-keeper-mcp"
-version = "0.1.5"
-description = "MCP server for extracting and persisting learnings from Copilot conversations"
+version = "0.1.6"
+description = "MCP server for persisting learnings from Copilot conversations - no API key required"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
@@ -21,12 +21,7 @@ classifiers = [
 ]
 dependencies = [
     "mcp>=1.0.0",
-    "google-genai>=1.0.0",
 ]
-
-[project.optional-dependencies]
-openai = ["openai>=1.0.0"]
-all = ["openai>=1.0.0"]
 
 [project.urls]
 Homepage = "https://github.com/phantom-man"

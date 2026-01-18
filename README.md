@@ -1,13 +1,13 @@
 # Canon Keeper MCP Server
 
-An MCP (Model Context Protocol) server that extracts durable learnings from Copilot conversations and persists them to `copilot-instructions.md`.
+An MCP (Model Context Protocol) server that persists learnings from Copilot conversations to `copilot-instructions.md`.
 
-**No VS Code extension required!** Copilot invokes the MCP tool directly.
+**No API key required!** Copilot extracts learnings using its own LLM, this tool handles deduplication and formatting.
 
 ## Quick Install
 
 ```bash
-# From any project directory
+pip install canon-keeper-mcp
 python -m canon_keeper_mcp install
 
 # Or specify a workspace
@@ -15,8 +15,9 @@ python -m canon_keeper_mcp install --workspace /path/to/project
 ```
 
 The installer will:
-1. ✅ Install dependencies (`mcp`, `google-genai`)
-2. ✅ Configure `.vscode/mcp.json` with the canon-keeper server
+
+1. ✅ Configure `.vscode/mcp.json` with the canon-keeper server
+2. ✅ Enable MCP in `.vscode/settings.json`
 3. ✅ Create/update `.github/copilot-instructions.md` with:
    - Memory Persistence Protocol (`@History` directive)
    - Best practices template
@@ -24,9 +25,9 @@ The installer will:
 
 ## Features
 
-- **Intelligent Extraction**: Uses LLM to identify technical decisions, architectural choices, workarounds, and insights
-- **Deduplication**: Compares against existing learnings to avoid duplicates
-- **Update Detection**: Identifies when a learning updates/supersedes an existing entry
+- **Zero Configuration**: No API keys needed - uses Copilot's built-in LLM
+- **Smart Deduplication**: Uses Jaccard similarity to avoid duplicate entries
+- **Simple Integration**: Works with Copilot's existing capabilities
 - **Markdown Formatting**: Returns properly formatted table rows for the Session Learnings Log
 
 ## Usage
@@ -41,20 +42,20 @@ User: add to memory
 ```
 
 Copilot will:
-1. Gather the full conversation history
-2. Call the MCP tool to extract learnings
-3. Deduplicate against existing entries
-4. Append new learnings to your `copilot-instructions.md`
-5. Report what was saved/skipped
+
+1. Extract learnings from the conversation (using its own LLM)
+2. Call the MCP tool to deduplicate against existing entries
+3. Append new learnings to your `copilot-instructions.md`
+4. Report what was saved/skipped
 
 ## Manual Installation
 
 If you prefer to install manually:
 
-### 1. Install dependencies
+### 1. Install the package
 
 ```bash
-pip install mcp google-genai
+pip install canon-keeper-mcp
 ```
 
 ### 2. Configure MCP server
@@ -85,19 +86,19 @@ Add to `.vscode/settings.json`:
 }
 ```
 
-### 3. Add directive to copilot-instructions.md
+### 4. Add directive to copilot-instructions.md
 
 Add this to your `.github/copilot-instructions.md`:
 
 ```markdown
 ### Memory Persistence Protocol (@History)
 
-**Rule:** When the user includes `@History`, `save this`, `remember this`, or `add to memory` in any message:
+**Rule:** When the user includes `@History`, `save this`, `remember this`, or `add to memory`:
 
-1. Read the current `copilot-instructions.md` file content
-2. Collect the full conversation history from this session
+1. Extract learnings from the conversation as an array of objects with: topic, decision, rationale
+2. Read the current `copilot-instructions.md` file content
 3. Call MCP tool `canon_keeper.extract_and_save_learnings` with:
-   - `conversation`: The complete conversation text
+   - `learnings`: Array of extracted learnings
    - `current_instructions`: The full content of copilot-instructions.md
 4. If `markdown_to_append` is non-empty, append it to the Session Learnings Log table
 5. Report what was saved and what was skipped as duplicates
@@ -105,7 +106,7 @@ Add this to your `.github/copilot-instructions.md`:
 **Trigger phrases:** `@History`, `save this`, `remember this`, `add to memory`
 ```
 
-### 4. Add Session Learnings Log table
+### 5. Add Session Learnings Log table
 
 ```markdown
 ## Session Learnings Log
@@ -118,20 +119,40 @@ Add this to your `.github/copilot-instructions.md`:
 
 ### `extract_and_save_learnings`
 
-Extracts learnings from conversation and deduplicates against existing entries.
+Deduplicates learnings against existing entries and formats for markdown.
 
 **Input:**
-- `conversation` (string): Full conversation text
+
+- `learnings` (array): Array of learning objects, each with:
+  - `topic` (string): Short topic name
+  - `decision` (string): The decision or learning
+  - `rationale` (string): Why this decision was made
 - `current_instructions` (string): Current copilot-instructions.md content
 
+**Example Input:**
+
+```json
+{
+  "learnings": [
+    {
+      "topic": "MCP Config Format",
+      "decision": "Use 'servers' key not 'mcpServers'",
+      "rationale": "VS Code MCP expects this exact format"
+    }
+  ],
+  "current_instructions": "... content of copilot-instructions.md ..."
+}
+```
+
 **Output:**
+
 ```json
 {
   "status": "success",
-  "message": "Found 2 new learning(s), skipped 1 duplicate(s).",
+  "message": "Found 1 new learning(s), skipped 0 duplicate(s).",
   "new_learnings": [...],
-  "duplicates_skipped": [...],
-  "markdown_to_append": "| 2026-01-17 | Topic | Decision | Rationale |",
+  "duplicates_skipped": [],
+  "markdown_to_append": "| 2026-01-18 | MCP Config Format | Use 'servers' key not 'mcpServers' | VS Code MCP expects this exact format |",
   "target_section": "Session Learnings Log"
 }
 ```
@@ -141,25 +162,36 @@ Extracts learnings from conversation and deduplicates against existing entries.
 Check if a specific learning already exists.
 
 **Input:**
+
 - `topic` (string): Learning topic
 - `decision` (string): The decision/learning
 - `current_instructions` (string): Current copilot-instructions.md content
 
 **Output:**
+
 ```json
 {
   "exists": true,
   "similar_to": "Existing Topic Name",
-  "reason": "Semantically equivalent to existing entry"
+  "similarity_score": 0.85,
+  "reason": "High similarity to existing entry"
 }
 ```
 
-## LLM Providers
+## How It Works
 
-Supports:
-- **Google GenAI** (default): Uses `gemini-2.0-flash-001`
-- **OpenAI** (fallback): Uses `gpt-4o-mini`
+1. **Copilot extracts learnings** from your conversation using its built-in LLM
+2. **MCP tool deduplicates** using Jaccard similarity (threshold: 0.6)
+3. **Tool formats** new learnings as markdown table rows
+4. **Copilot appends** the formatted rows to your copilot-instructions.md
 
-Set appropriate API keys:
-- `GOOGLE_API_KEY` for Google GenAI
-- `OPENAI_API_KEY` for OpenAI
+This approach means:
+
+- ✅ No API keys needed
+- ✅ No external LLM calls
+- ✅ Fast deduplication
+- ✅ Works offline (except for Copilot itself)
+
+## License
+
+MIT

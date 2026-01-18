@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: cannon_keeper_mcp_environment
+    environment: canon_keeper_mcp_environment
     steps:
       - name: Check out repository
         uses: actions/checkout@v4

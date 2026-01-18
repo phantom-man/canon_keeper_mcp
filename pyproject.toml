@@ -29,9 +29,9 @@ openai = ["openai>=1.0.0"]
 all = ["openai>=1.0.0"]
 
 [project.urls]
-Homepage = "https://github.com/langchain-ai/deepagents-quickstarts"
-Repository = "https://github.com/langchain-ai/deepagents-quickstarts/tree/main/canon_keeper_mcp"
-Documentation = "https://github.com/langchain-ai/deepagents-quickstarts/blob/main/canon_keeper_mcp/README.md"
+Homepage = "https://github.com/phantom-man"
+Repository = "https://github.com/phantom-man/canon_keeper_mcp"
+Documentation = "https://github.com/phantom-man/main/canon_keeper_mcp/README.md"
 
 [project.scripts]
 canon-keeper-mcp = "canon_keeper_mcp.server:main"

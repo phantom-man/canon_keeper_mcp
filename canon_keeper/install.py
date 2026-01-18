@@ -126,47 +126,61 @@ def setup_copilot_instructions(workspace: Path, force: bool = False) -> bool:
     # Ensure .github directory exists
     github_dir.mkdir(exist_ok=True)
     
-    if instructions_file.exists() and not force:
-        content = instructions_file.read_text(encoding="utf-8")
-        
-        if "Memory Persistence Protocol" in content:
-            print("   ⏭️  Memory Protocol already exists")
-            return True
-        
-        # Add to existing file
-        if "Session Learnings Log" in content:
-            print("   🔄 Adding Memory Protocol to existing file...")
-            # Insert before Session Learnings Log
-            for marker in ["## 6. Session Learnings Log", "## Session Learnings Log", "### Session Learnings Log"]:
-                if marker in content:
-                    content = content.replace(
-                        marker,
-                        f"## 5. Memory Persistence\n{MEMORY_PROTOCOL_DIRECTIVE}\n\n{marker}"
-                    )
-                    break
-        else:
-            # Append to end
-            print("   🔄 Appending Memory Protocol to existing file...")
-            today = datetime.now().strftime("%Y-%m-%d")
-            content += f'''
+    if not instructions_file.exists():
+        # No file - create full template
+        print("   ✅ Creating copilot-instructions.md...")
+        instructions_file.write_text(get_template(), encoding="utf-8")
+        return True
+    
+    # File exists - be careful with user's content
+    content = instructions_file.read_text(encoding="utf-8")
+    
+    if "Memory Persistence Protocol" in content:
+        print("   ⏭️  Memory Protocol already exists")
+        return True
+    
+    if force:
+        # User explicitly wants to overwrite
+        print("   🔄 Overwriting with template (--force)...")
+        instructions_file.write_text(get_template(), encoding="utf-8")
+        return True
+    
+    # Preserve user's content - just append what's needed
+    print("   🔄 Adding Memory Protocol to existing file...")
+    
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    # Check if they already have a Session Learnings Log
+    has_learnings_log = "Session Learnings Log" in content
+    
+    # Build the addition
+    addition = f'''
+
+---
 
 ## Memory Persistence
 {MEMORY_PROTOCOL_DIRECTIVE}
-
+'''
+    
+    if not has_learnings_log:
+        addition += f'''
 ## Session Learnings Log
 | Date | Topic | Decision | Rationale |
 |------|-------|----------|----------|
 | {today} | Canon Keeper Installed | Copilot-based memory persistence | Use @History to save learnings |
 '''
-        
-        instructions_file.write_text(content, encoding="utf-8")
-        print("   ✅ Updated copilot-instructions.md")
-        return True
-    else:
-        # Create new file
-        print("   ✅ Creating copilot-instructions.md...")
-        instructions_file.write_text(get_template(), encoding="utf-8")
-        return True
+    
+    addition += '''
+---
+*Memory persistence added by Canon Keeper.*
+'''
+    
+    # Append to end
+    content += addition
+    instructions_file.write_text(content, encoding="utf-8")
+    print("   ✅ Appended Memory Protocol to existing file")
+    print("   💡 Your existing content was preserved")
+    return True
 
 
 def main():
